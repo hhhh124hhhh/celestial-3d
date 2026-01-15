@@ -1,0 +1,1345 @@
+<!DOCTYPE html>
+<!--
+    3D 星际模拟查看器模板
+    THIS IS A TEMPLATE THAT SHOULD BE USED EVERY TIME AND MODIFIED.
+
+    WHAT TO KEEP (保持不变):
+    ✓ Overall structure (header, sidebar, main content)
+    ✓ Anthropic branding (colors, fonts, layout)
+    ✓ Seed navigation section (always include this)
+    ✓ Self-contained artifact (everything inline)
+    ✓ Chinese language (所有 UI 文本保持中文)
+
+    WHAT TO CREATIVELY EDIT (创造性修改):
+    ✗ The p5.js WEBGL algorithm (implement YOUR 3D vision)
+    ✗ The physics engine (implement YOUR N-body simulation)
+    ✗ The parameters (define what YOUR 3D art needs)
+    ✗ The UI controls (match YOUR physics parameters)
+
+    Let your celestial philosophy guide the implementation.
+    The cosmos is your laboratory - be creative!
+-->
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D 星际模拟 - 生成艺术浏览器</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.7.0/p5.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&family=Lora:wght@400;500&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        /* Anthropic Brand Colors */
+        :root {
+            --anthropic-dark: #141413;
+            --anthropic-light: #faf9f5;
+            --anthropic-mid-gray: #b0aea5;
+            --anthropic-light-gray: #e8e6dc;
+            --anthropic-orange: #d97757;
+            --anthropic-blue: #6a9bcc;
+            --anthropic-green: #788c5d;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', 'Noto Sans SC', sans-serif;
+            background: linear-gradient(135deg, var(--anthropic-light) 0%, #f5f3ee 100%);
+            min-height: 100vh;
+            color: var(--anthropic-dark);
+        }
+
+        .container {
+            display: flex;
+            min-height: 100vh;
+            padding: 20px;
+            gap: 20px;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 360px;
+            flex-shrink: 0;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(20, 20, 19, 0.1);
+            overflow-y: auto;
+            overflow-x: hidden;
+            max-height: calc(100vh - 40px);
+        }
+
+        .sidebar h1 {
+            font-family: 'Lora', 'Noto Sans SC', serif;
+            font-size: 24px;
+            font-weight: 500;
+            color: var(--anthropic-dark);
+            margin-bottom: 8px;
+        }
+
+        .sidebar .subtitle {
+            color: var(--anthropic-mid-gray);
+            font-size: 14px;
+            margin-bottom: 32px;
+            line-height: 1.4;
+        }
+
+        /* Control Sections */
+        .control-section {
+            margin-bottom: 32px;
+        }
+
+        .control-section h3 {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--anthropic-dark);
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .control-section h3::before {
+            content: '•';
+            color: var(--anthropic-orange);
+            font-weight: bold;
+        }
+
+        /* Seed Controls */
+        .seed-input {
+            width: 100%;
+            background: var(--anthropic-light);
+            padding: 12px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            margin-bottom: 12px;
+            border: 1px solid var(--anthropic-light-gray);
+            text-align: center;
+        }
+
+        .seed-input:focus {
+            outline: none;
+            border-color: var(--anthropic-orange);
+            box-shadow: 0 0 0 2px rgba(217, 119, 87, 0.1);
+            background: white;
+        }
+
+        .seed-controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        /* Parameter Controls */
+        .control-group {
+            margin-bottom: 20px;
+        }
+
+        .control-group label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--anthropic-dark);
+            margin-bottom: 8px;
+        }
+
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .slider-container input[type="range"] {
+            flex: 1;
+            height: 4px;
+            background: var(--anthropic-light-gray);
+            border-radius: 2px;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        .slider-container input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            background: var(--anthropic-orange);
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .slider-container input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.1);
+            background: #c86641;
+        }
+
+        .slider-container input[type="range"]::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            background: var(--anthropic-orange);
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .value-display {
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            color: var(--anthropic-mid-gray);
+            min-width: 60px;
+            text-align: right;
+        }
+
+        /* Checkbox */
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .checkbox-container input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        /* Buttons */
+        .button {
+            background: var(--anthropic-orange);
+            color: white;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            width: 100%;
+        }
+
+        .button:hover {
+            background: #c86641;
+            transform: translateY(-1px);
+        }
+
+        .button:active {
+            transform: translateY(0);
+        }
+
+        .button.secondary {
+            background: var(--anthropic-blue);
+        }
+
+        .button.secondary:hover {
+            background: #5a8bb8;
+        }
+
+        .button.tertiary {
+            background: var(--anthropic-green);
+        }
+
+        .button.tertiary:hover {
+            background: #6b7b52;
+        }
+
+        .button.quaternary {
+            background: var(--anthropic-dark);
+        }
+
+        .button.quaternary:hover {
+            background: #2a2a29;
+        }
+
+        .button-row {
+            display: flex;
+            gap: 8px;
+        }
+
+        .button-row .button {
+            flex: 1;
+        }
+
+        /* Canvas Area */
+        .canvas-area {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 0;
+        }
+
+        #canvas-container {
+            width: 100%;
+            max-width: 1200px;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(20, 20, 19, 0.1);
+            background: #0a0a1a;
+        }
+
+        #canvas-container canvas {
+            display: block;
+            width: 100% !important;
+            height: auto !important;
+        }
+
+        /* Loading State */
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            color: var(--anthropic-mid-gray);
+            padding: 100px;
+        }
+
+        /* Responsive - Stack on mobile */
+        @media (max-width: 600px) {
+            .container {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                width: 100%;
+                max-height: none;
+            }
+
+            .canvas-area {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 控制面板 -->
+        <div class="sidebar">
+            <!-- 标题 -->
+            <h1>3D 星际模拟</h1>
+            <div class="subtitle">基于 N 体引力物理的 3D 宇宙模拟</div>
+
+            <!-- 随机种子控制区 -->
+            <div class="control-section">
+                <h3>随机种子</h3>
+                <input type="number" id="seed-input" class="seed-input" value="12345" onchange="updateSeed()">
+                <div class="seed-controls">
+                    <button class="button secondary" onclick="previousSeed()">← 上一个</button>
+                    <button class="button secondary" onclick="nextSeed()">下一个 →</button>
+                </div>
+                <button class="button tertiary" onclick="randomSeedAndUpdate()">↻ 随机生成</button>
+            </div>
+
+            <!-- 天体系统参数 -->
+            <div class="control-section">
+                <h3>天体系统</h3>
+
+                <div class="control-group">
+                    <label>恒星数量</label>
+                    <div class="slider-container">
+                        <input type="range" id="starCount" min="1" max="3" step="1" value="1" oninput="updateParam('starCount', this.value)">
+                        <span class="value-display" id="starCount-value">1</span>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label>行星数量</label>
+                    <div class="slider-container">
+                        <input type="range" id="planetCount" min="1" max="10" step="1" value="5" oninput="updateParam('planetCount', this.value)">
+                        <span class="value-display" id="planetCount-value">5</span>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label>卫星数量（每行星）</label>
+                    <div class="slider-container">
+                        <input type="range" id="moonCountRange" min="0" max="5" step="1" value="2" oninput="updateParam('moonCountRange', this.value)">
+                        <span class="value-display" id="moonCountRange-value">2</span>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label>恒星大小</label>
+                    <div class="slider-container">
+                        <input type="range" id="sunSize" min="50" max="150" step="5" value="80" oninput="updateParam('sunSize', this.value)">
+                        <span class="value-display" id="sunSize-value">80</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 物理引擎参数 -->
+            <div class="control-section">
+                <h3>物理引擎</h3>
+
+                <div class="control-group">
+                    <label>引力常数 G</label>
+                    <div class="slider-container">
+                        <input type="range" id="G" min="0.1" max="10" step="0.1" value="1.0" oninput="updateParam('G', this.value)">
+                        <span class="value-display" id="G-value">1.0</span>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label>时间步长 dt</label>
+                    <div class="slider-container">
+                        <input type="range" id="dt" min="0.005" max="0.1" step="0.005" value="0.016" oninput="updateParam('dt', this.value)">
+                        <span class="value-display" id="dt-value">0.016</span>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label>初始速度倍率</label>
+                    <div class="slider-container">
+                        <input type="range" id="velocityMultiplier" min="0.5" max="2.0" step="0.1" value="1.0" oninput="updateParam('velocityMultiplier', this.value)">
+                        <span class="value-display" id="velocityMultiplier-value">1.0</span>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label>轨道偏心率</label>
+                    <div class="slider-container">
+                        <input type="range" id="orbitEccentricity" min="0" max="0.7" step="0.05" value="0.2" oninput="updateParam('orbitEccentricity', this.value)">
+                        <span class="value-display" id="orbitEccentricity-value">0.2</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 视觉效果参数 -->
+            <div class="control-section">
+                <h3>视觉效果</h3>
+
+                <div class="control-group">
+                    <label>星星数量（背景）</label>
+                    <div class="slider-container">
+                        <input type="range" id="backgroundStars" min="500" max="5000" step="100" value="2000" oninput="updateParam('backgroundStars', this.value)">
+                        <span class="value-display" id="backgroundStars-value">2000</span>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label>星云数量</label>
+                    <div class="slider-container">
+                        <input type="range" id="nebulaCount" min="0" max="10" step="1" value="3" oninput="updateParam('nebulaCount', this.value)">
+                        <span class="value-display" id="nebulaCount-value">3</span>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label>光照强度</label>
+                    <div class="slider-container">
+                        <input type="range" id="lightIntensity" min="50" max="255" step="5" value="200" oninput="updateParam('lightIntensity', this.value)">
+                        <span class="value-display" id="lightIntensity-value">200</span>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label>环境光强度</label>
+                    <div class="slider-container">
+                        <input type="range" id="ambientLight" min="10" max="100" step="5" value="50" oninput="updateParam('ambientLight', this.value)">
+                        <span class="value-display" id="ambientLight-value">50</span>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <div class="checkbox-container">
+                        <input type="checkbox" id="showOrbits" checked onchange="updateParam('showOrbits', this.checked)">
+                        <label for="showOrbits" style="margin-bottom: 0;">显示轨道线</label>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <div class="checkbox-container">
+                        <input type="checkbox" id="enableCollisions" onchange="updateParam('enableCollisions', this.checked)">
+                        <label for="enableCollisions" style="margin-bottom: 0;">启用碰撞检测</label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 相机控制 -->
+            <div class="control-section">
+                <h3>相机控制</h3>
+
+                <div class="control-group">
+                    <label>相机距离</label>
+                    <div class="slider-container">
+                        <input type="range" id="cameraDistance" min="200" max="2000" step="50" value="600" oninput="updateParam('cameraDistance', this.value)">
+                        <span class="value-display" id="cameraDistance-value">600</span>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label>自动旋转速度</label>
+                    <div class="slider-container">
+                        <input type="range" id="autoRotateSpeed" min="0" max="0.01" step="0.001" value="0.002" oninput="updateParam('autoRotateSpeed', this.value)">
+                        <span class="value-display" id="autoRotateSpeed-value">0.002</span>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <div class="checkbox-container">
+                        <input type="checkbox" id="autoRotate" checked onchange="updateParam('autoRotate', this.checked)">
+                        <label for="autoRotate" style="margin-bottom: 0;">启用自动旋转</label>
+                    </div>
+                </div>
+
+                <button class="button quaternary" onclick="resetCamera()">重置相机</button>
+            </div>
+
+            <!-- 操作区 -->
+            <div class="control-section">
+                <h3>操作</h3>
+                <div class="button-row">
+                    <button class="button" onclick="resetParameters()">重置参数</button>
+                    <button class="button quaternary" onclick="downloadScreenshot()">下载截图</button>
+                </div>
+                <button class="button secondary" onclick="toggleAnimation()" style="margin-top: 8px;">暂停/继续</button>
+            </div>
+        </div>
+
+        <!-- 主画布区域 -->
+        <div class="canvas-area">
+            <div id="canvas-container">
+                <div class="loading">正在初始化 3D 星际系统...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ═══════════════════════════════════════════════════════════════════════
+        // 3D 星际模拟参数 - 可根据需求调整
+        // ═══════════════════════════════════════════════════════════════════════
+
+        let params = {
+            // 随机种子
+            seed: 12345,
+
+            // 天体系统
+            starCount: 1,
+            planetCount: 5,
+            moonCountRange: 2,
+            sunSize: 80,
+
+            // 物理引擎
+            G: 1.0,
+            dt: 0.016,
+            velocityMultiplier: 1.0,
+            orbitEccentricity: 0.2,
+            enableCollisions: false,
+
+            // 视觉效果
+            backgroundStars: 2000,
+            nebulaCount: 3,
+            lightIntensity: 200,
+            ambientLight: 50,
+            showOrbits: true,
+
+            // 相机控制
+            cameraDistance: 600,
+            autoRotate: true,
+            autoRotateSpeed: 0.002
+        };
+
+        let defaultParams = {...params};
+
+        // 全局变量
+        let bodies = [];
+        let starField = null;
+        let nebulas = [];
+        let isAnimating = true;
+
+        // 行星调色板
+        const planetPalette = [
+            '#4169E1', // 蓝色
+            '#DC143C', // 红色
+            '#32CD32', // 绿色
+            '#9370DB', // 紫色
+            '#FF8C00', // 橙色
+            '#00CED1', // 青色
+            '#FFD700', // 金色
+            '#8B4513'  // 棕色
+        ];
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // P5.JS WEBGL 3D 星际模拟 - 替换为你的算法
+        // ═══════════════════════════════════════════════════════════════════════
+
+        function setup() {
+            let canvas = createCanvas(1200, 1200, WEBGL);
+            canvas.parent('canvas-container');
+
+            // WEBGL 特定设置
+            setAttributes('antialias', true);
+            pixelDensity(1);
+
+            initializeSystem();
+
+            // 移除加载信息
+            document.querySelector('.loading').style.display = 'none';
+        }
+
+        function initializeSystem() {
+            // ═══════════════════════════════════════════════════════════════════════
+            // 参数验证和边界检查
+            // ═══════════════════════════════════════════════════════════════════════
+
+            // 验证和修正关键参数
+            if (params.starCount < 1) {
+                console.warn('⚠️ 恒星数量必须至少为 1，已自动调整为 1');
+                params.starCount = 1;
+            }
+            if (params.starCount > 3) {
+                console.warn('⚠️ 恒星数量过多（>3），已自动调整为 3');
+                params.starCount = 3;
+            }
+
+            if (params.planetCount < 0) {
+                console.warn('⚠️ 行星数量不能为负，已自动调整为 0');
+                params.planetCount = 0;
+            }
+            if (params.planetCount > 10) {
+                console.warn('⚠️ 行星数量过多（>10），已自动调整为 10');
+                params.planetCount = 10;
+            }
+
+            if (params.moonCountRange < 0) {
+                console.warn('⚠️ 卫星数量不能为负，已自动调整为 0');
+                params.moonCountRange = 0;
+            }
+            if (params.moonCountRange > 5) {
+                console.warn('⚠️ 卫星数量过多（>5），已自动调整为 5');
+                params.moonCountRange = 5;
+            }
+
+            // 限制天体总数以避免性能问题
+            let maxTotalBodies = 80;
+            let estimatedBodies = params.starCount + params.planetCount * (1 + params.moonCountRange);
+            if (estimatedBodies > maxTotalBodies) {
+                console.warn(`⚠️ 预计天体数量 ${estimatedBodies} 超过安全限制 ${maxTotalBodies}`);
+                // 自动调整行星数量
+                params.planetCount = Math.max(1, Math.floor((maxTotalBodies - params.starCount) / (params.moonCountRange + 1)));
+                console.warn(`⚠️ 行星数量已自动调整为 ${params.planetCount}`);
+            }
+
+            // 物理参数验证
+            if (params.G <= 0) {
+                console.warn('⚠️ 引力常数必须大于 0，已自动调整为 0.1');
+                params.G = 0.1;
+            }
+            if (params.G > 10) {
+                console.warn('⚠️ 引力常数过大（>10），已自动调整为 10');
+                params.G = 10;
+            }
+
+            if (params.dt <= 0) {
+                console.warn('⚠️ 时间步长必须大于 0，已自动调整为 0.01');
+                params.dt = 0.01;
+            }
+            if (params.dt > 0.1) {
+                console.warn('⚠️ 时间步长过大（>0.1），可能导致轨道不稳定，已自动调整为 0.1');
+                params.dt = 0.1;
+            }
+
+            if (params.velocityMultiplier <= 0) {
+                console.warn('⚠️ 速度倍率必须大于 0，已自动调整为 0.5');
+                params.velocityMultiplier = 0.5;
+            }
+
+            if (params.orbitEccentricity < 0) {
+                console.warn('⚠️ 轨道偏心率不能为负，已自动调整为 0');
+                params.orbitEccentricity = 0;
+            }
+            if (params.orbitEccentricity > 0.9) {
+                console.warn('⚠️ 轨道偏心率过大（>0.9），可能导致行星逃逸，已自动调整为 0.7');
+                params.orbitEccentricity = 0.7;
+            }
+
+            // 视觉参数验证
+            if (params.backgroundStars < 100) {
+                console.warn('⚠️ 背景星星数量过少（<100），已自动调整为 100');
+                params.backgroundStars = 100;
+            }
+            if (params.backgroundStars > 5000) {
+                console.warn('⚠️ 背景星星数量过多（>5000），可能影响性能，已自动调整为 5000');
+                params.backgroundStars = 5000;
+            }
+
+            // 更新 UI 显示
+            updateUIDisplay();
+
+            // ═══════════════════════════════════════════════════════════════════════
+            // 系统初始化
+            // ═══════════════════════════════════════════════════════════════════════
+
+            // 设置随机种子以确保可重现性
+            randomSeed(params.seed);
+            noiseSeed(params.seed);
+
+            // 清空系统
+            bodies = [];
+            nebulas = [];
+
+            // 创建星空背景
+            try {
+                starField = new StarField(params.backgroundStars);
+            } catch (e) {
+                console.error('❌ 创建星空背景失败:', e);
+                starField = new StarField(500); // 降级到简单模式
+            }
+
+            // 创建恒星
+            for (let i = 0; i < params.starCount; i++) {
+                let starMass = params.sunSize * 100;
+                let starPos = createVector(0, 0, 0);
+                let starVel = createVector(0, 0, 0);
+
+                // 如果有多个恒星，给它们一些随机偏移和速度
+                if (params.starCount > 1) {
+                    let offsetAngle = map(i, 0, params.starCount, 0, TWO_PI);
+                    let offsetDist = 100;
+                    starPos = p5.Vector.fromAngle(offsetAngle).mult(offsetDist);
+                    starVel = p5.Vector.fromAngle(offsetAngle + HALF_PI).mult(0.5);
+                }
+
+                let star = new CelestialBody(
+                    starMass,
+                    starPos,
+                    starVel,
+                    params.sunSize,
+                    '#FFD700',
+                    true
+                );
+                bodies.push(star);
+            }
+
+            // 验证是否有恒星创建成功
+            if (bodies.length === 0) {
+                console.error('❌ 没有成功创建任何恒星，系统无法运行');
+                return;
+            }
+
+            // 创建行星
+            for (let i = 0; i < params.planetCount; i++) {
+                // 安全地获取父恒星
+                if (bodies.length === 0) {
+                    console.error(`❌ 行星 ${i}: 没有可用的父恒星`);
+                    break;
+                }
+
+                let parentStarIndex = i % bodies.length;
+                let parentStar = bodies[parentStarIndex];
+
+                if (!parentStar || !parentStar.pos) {
+                    console.error(`❌ 行星 ${i}: 父恒星无效 (index ${parentStarIndex})`);
+                    continue;
+                }
+
+                // 创建行星（在 try 块外定义变量，以便后续使用）
+                let planet = null;
+                try {
+                    planet = createPlanetInOrbit(parentStar, i);
+                    if (planet) {
+                        bodies.push(planet);
+                    } else {
+                        console.error(`❌ 创建行星 ${i} 失败: 返回值为 null`);
+                        continue;
+                    }
+                } catch (e) {
+                    console.error(`❌ 创建行星 ${i} 失败:`, e);
+                    continue;
+                }
+
+                // 创建卫星（planet 变量现在可用）
+                let moonCount = floor(random(params.moonCountRange + 1));
+                for (let j = 0; j < moonCount; j++) {
+                    try {
+                        let moon = createMoonInOrbit(planet);
+                        if (moon) {
+                            bodies.push(moon);
+                        }
+                    } catch (e) {
+                        console.error(`❌ 创建卫星失败:`, e);
+                        continue;
+                    }
+                }
+            }
+
+            // 创建星云
+            for (let i = 0; i < params.nebulaCount; i++) {
+                try {
+                    let nebulaPos = p5.Vector.random3D().mult(random(400, 800));
+                    let nebulaColor = color(random(planetPalette));
+                    nebulaColor.setAlpha(30);
+                    nebulas.push(new Nebula(nebulaPos, random(200, 500), nebulaColor));
+                } catch (e) {
+                    console.error(`❌ 创建星云 ${i} 失败:`, e);
+                    continue;
+                }
+            }
+
+            console.log(`✅ 系统初始化完成: ${bodies.length} 个天体, ${nebulas.length} 个星云`);
+        }
+
+        function draw() {
+            try {
+                // 完全清除背景
+                background(8, 12, 25);
+
+                // 验证系统状态
+                if (!bodies || bodies.length === 0) {
+                    // 显示错误信息
+                    push();
+                    fill(255);
+                    textAlign(CENTER, CENTER);
+                    textSize(24);
+                    text('系统初始化失败，请刷新页面', 0, 0);
+                    pop();
+                    return;
+                }
+
+                // 光照系统
+                ambientLight(params.ambientLight);
+                for (let body of bodies) {
+                    if (body && body.isStar && body.pos) {
+                        pointLight(
+                            params.lightIntensity,
+                            params.lightIntensity * 0.9,
+                            params.lightIntensity * 0.7,
+                            body.pos.x, body.pos.y, body.pos.z
+                        );
+                    }
+                }
+
+                // 相机控制
+                orbitControl(4, 4, 0.1);
+
+                if (params.autoRotate) {
+                    rotateY(frameCount * params.autoRotateSpeed);
+                    rotateX(frameCount * params.autoRotateSpeed * 0.3);
+                }
+
+                // 绘制星空背景
+                if (starField) {
+                    starField.display();
+                }
+
+                // 绘制星云
+                for (let nebula of nebulas) {
+                    if (nebula) {
+                        nebula.display();
+                    }
+                }
+
+                // 物理模拟更新
+                if (isAnimating) {
+                    // 计算引力
+                    for (let body of bodies) {
+                        if (body && body.applyGravity) {
+                            body.applyGravity(bodies, params.G);
+                        }
+                    }
+
+                    // 更新位置
+                    for (let body of bodies) {
+                        if (body && body.update) {
+                            body.update(params.dt);
+                        }
+                    }
+
+                    // 碰撞检测
+                    if (params.enableCollisions) {
+                        handleCollisions();
+                    }
+                }
+
+                // 绘制天体
+                for (let body of bodies) {
+                    if (body && body.display) {
+                        body.display();
+                    }
+                }
+
+            } catch (e) {
+                console.error('❌ 渲染错误:', e);
+                // 显示错误信息
+                push();
+                fill(255, 100, 100);
+                textAlign(CENTER, CENTER);
+                textSize(20);
+                text('渲染出错: ' + e.message, 0, -50);
+                textSize(16);
+                fill(200);
+                text('请尝试刷新页面或调整参数', 0, 0);
+                pop();
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // N 体物理引擎 - 天体类
+        // ═══════════════════════════════════════════════════════════════════════
+
+        class CelestialBody {
+            constructor(mass, position, velocity, radius, colorStr, isStar) {
+                this.mass = mass;
+                this.pos = position.copy();
+                this.vel = velocity.copy();
+                this.acc = createVector(0, 0, 0);
+                this.radius = radius;
+                this.color = color(colorStr);
+                this.isStar = isStar;
+                this.trail = [];
+            }
+
+            applyGravity(otherBodies, G) {
+                if (!otherBodies || otherBodies.length === 0) return;
+
+                for (let other of otherBodies) {
+                    // 跳过自己和无效天体
+                    if (other === this || !other || !other.pos) continue;
+
+                    try {
+                        let force = p5.Vector.sub(other.pos, this.pos);
+                        let distance = force.mag();
+
+                        // 防止距离过小导致数值爆炸
+                        let minDistance = this.radius + other.radius;
+                        if (distance < minDistance) {
+                            distance = minDistance;
+                        }
+
+                        // 万有引力定律：F = G * m1 * m2 / r²
+                        let strength = (G * this.mass * other.mass) / (distance * distance);
+
+                        // 防止引力过大
+                        strength = Math.min(strength, 100);
+
+                        force.normalize();
+                        force.mult(strength);
+
+                        this.acc.add(force);
+                    } catch (e) {
+                        console.error('❌ 引力计算错误:', e);
+                        continue;
+                    }
+                }
+            }
+
+            update(dt) {
+                try {
+                    this.vel.add(this.acc.copy().mult(dt));
+                    this.pos.add(this.vel.copy().mult(dt));
+                    this.acc.mult(0);
+
+                    // 防止天体飞得太远（性能优化）
+                    let maxDistance = 5000;
+                    if (this.pos.mag() > maxDistance) {
+                        // 如果太远，将其拉回（可选）或移除
+                        console.warn(`⚠️ 天体超出边界 (距离: ${this.pos.mag().toFixed(0)})`);
+                        // 简单处理：将其放置回边界附近
+                        this.pos.normalize().mult(maxDistance);
+                        this.vel.mult(-0.5); // 反向并减速
+                    }
+
+                    // 记录轨迹
+                    if (frameCount % 3 === 0 && !this.isStar) {
+                        this.trail.push(this.pos.copy());
+                        if (this.trail.length > 100) this.trail.shift();
+                    }
+                } catch (e) {
+                    console.error('❌ 更新天体位置错误:', e);
+                }
+            }
+
+            display() {
+                push();
+                translate(this.pos.x, this.pos.y, this.pos.z);
+
+                // 绘制轨道
+                if (params.showOrbits && this.trail.length > 1) {
+                    this.drawTrail();
+                }
+
+                // 绘制球体
+                noStroke();
+                if (this.isStar) {
+                    // 恒星：简单的发光效果，不绘制额外光晕（避免重影）
+                    emissiveMaterial(this.color);
+                    sphere(this.radius, 24, 24);
+                } else {
+                    // 行星：标准材质
+                    ambientMaterial(this.color);
+                    specularMaterial(200);
+                    shininess(20);
+                    sphere(this.radius, 24, 24);
+                }
+
+                pop();
+            }
+
+            drawTrail() {
+                if (this.trail.length < 2) return;
+
+                noFill();
+                strokeWeight(1);
+                beginShape();
+                for (let i = 0; i < this.trail.length; i++) {
+                    let alpha = map(i, 0, this.trail.length, 0, 100);
+                    let c = color(this.color);
+                    stroke(red(c), green(c), blue(c), alpha);
+                    vertex(this.trail[i].x, this.trail[i].y, this.trail[i].z);
+                }
+                endShape();
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // 星空背景类
+        // ═══════════════════════════════════════════════════════════════════════
+
+        class StarField {
+            constructor(count) {
+                this.stars = [];
+                for (let i = 0; i < count; i++) {
+                    let pos = p5.Vector.random3D();
+                    pos.mult(random(800, 2000));
+                    this.stars.push({
+                        pos: pos,
+                        size: random(0.5, 2.5),
+                        brightness: random(100, 255)
+                    });
+                }
+            }
+
+            display() {
+                for (let star of this.stars) {
+                    push();
+                    translate(star.pos.x, star.pos.y, star.pos.z);
+                    noStroke();
+                    fill(255, star.brightness);
+                    sphere(star.size, 4, 4);
+                    pop();
+                }
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // 星云类
+        // ═══════════════════════════════════════════════════════════════════════
+
+        class Nebula {
+            constructor(pos, size, color) {
+                this.pos = pos;
+                this.size = size;
+                this.color = color;
+            }
+
+            display() {
+                push();
+                translate(this.pos.x, this.pos.y, this.pos.z);
+
+                noStroke();
+                for (let i = 0; i < 5; i++) {
+                    let alpha = map(i, 0, 5, 50, 10);
+                    let c = color(this.color);
+                    fill(red(c), green(c), blue(c), alpha);
+                    translate(random(-20, 20), random(-20, 20), random(-20, 20));
+                    sphere(this.size * random(0.9, 1.1), 16, 16);
+                }
+
+                pop();
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // 辅助函数
+        // ═══════════════════════════════════════════════════════════════════════
+
+        function createPlanetInOrbit(parentStar, index) {
+            let distance = parentStar.radius * 3 + (index + 1) * 60 + random(20);
+            let angle = random(TWO_PI);
+
+            // 计算圆轨道速度：v = sqrt(G * M / r)
+            let orbitalSpeed = sqrt(params.G * parentStar.mass / distance) * params.velocityMultiplier;
+
+            // 添加偏心率
+            let eccentricity = params.orbitEccentricity;
+            let distanceMultiplier = 1 + eccentricity * cos(angle);
+
+            let pos = p5.Vector.fromAngle(angle).mult(distance * distanceMultiplier);
+            let vel = p5.Vector.fromAngle(angle + HALF_PI).mult(orbitalSpeed);
+
+            return new CelestialBody(
+                random(10, 50),
+                pos,
+                vel,
+                random(10, 30),
+                random(planetPalette),
+                false
+            );
+        }
+
+        function createMoonInOrbit(parentPlanet) {
+            let distance = parentPlanet.radius * 2 + random(10, 30);
+            let angle = random(TWO_PI);
+
+            let orbitalSpeed = sqrt(params.G * parentPlanet.mass / distance) * 0.5;
+
+            let pos = parentPlanet.pos.copy().add(p5.Vector.fromAngle(angle).mult(distance));
+            let vel = parentPlanet.vel.copy().add(p5.Vector.fromAngle(angle + HALF_PI).mult(orbitalSpeed));
+
+            return new CelestialBody(
+                random(1, 5),
+                pos,
+                vel,
+                random(2, 6),
+                '#CCCCCC',
+                false
+            );
+        }
+
+        function handleCollisions() {
+            let toRemove = new Set();
+
+            for (let i = 0; i < bodies.length; i++) {
+                if (toRemove.has(i)) continue;
+
+                for (let j = i + 1; j < bodies.length; j++) {
+                    if (toRemove.has(j)) continue;
+
+                    let body1 = bodies[i];
+                    let body2 = bodies[j];
+                    let dist = p5.Vector.dist(body1.pos, body2.pos);
+
+                    if (dist < body1.radius + body2.radius) {
+                        // 简单的合并逻辑（动量守恒）
+                        let newMass = body1.mass + body2.mass;
+                        let newVel = p5.Vector.add(
+                            p5.Vector.mult(body1.vel, body1.mass),
+                            p5.Vector.mult(body2.vel, body2.mass)
+                        ).div(newMass);
+
+                        let newPos = p5.Vector.add(
+                            p5.Vector.mult(body1.pos, body1.mass),
+                            p5.Vector.mult(body2.pos, body2.mass)
+                        ).div(newMass);
+
+                        let newRadius = pow(pow(body1.radius, 3) + pow(body2.radius, 3), 1/3);
+
+                        // 更新较大的天体，标记较小的为移除
+                        if (body1.mass >= body2.mass) {
+                            body1.mass = newMass;
+                            body1.vel = newVel;
+                            body1.pos = newPos;
+                            body1.radius = newRadius;
+                            toRemove.add(j);
+                        } else {
+                            body2.mass = newMass;
+                            body2.vel = newVel;
+                            body2.pos = newPos;
+                            body2.radius = newRadius;
+                            toRemove.add(i);
+                            break; // body1 已被移除，跳出内层循环
+                        }
+                    }
+                }
+            }
+
+            // 从后往前移除被标记的天体
+            let indices = Array.from(toRemove).sort((a, b) => b - a);
+            for (let idx of indices) {
+                bodies.splice(idx, 1);
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // UI 控制处理
+        // ═══════════════════════════════════════════════════════════════════════
+
+        function updateParam(paramName, value) {
+            let oldValue = params[paramName];
+
+            // ═══════════════════════════════════════════════════════════════════════
+            // 参数验证 - 防止无效值
+            // ═══════════════════════════════════════════════════════════════════════
+
+            // 数值参数转换
+            if (typeof value === 'string') {
+                value = parseFloat(value);
+            }
+
+            // 天体系统参数验证
+            if (paramName === 'starCount') {
+                value = Math.max(1, Math.min(3, value)); // 限制在 [1, 3]
+            } else if (paramName === 'planetCount') {
+                value = Math.max(0, Math.min(10, value)); // 限制在 [0, 10]
+            } else if (paramName === 'moonCountRange') {
+                value = Math.max(0, Math.min(5, value)); // 限制在 [0, 5]
+            } else if (paramName === 'sunSize') {
+                value = Math.max(30, Math.min(200, value)); // 限制在 [30, 200]
+            }
+
+            // 物理参数验证
+            else if (paramName === 'G') {
+                value = Math.max(0.1, Math.min(10, value)); // 限制在 [0.1, 10]
+            } else if (paramName === 'dt') {
+                value = Math.max(0.005, Math.min(0.1, value)); // 限制在 [0.005, 0.1]
+            } else if (paramName === 'velocityMultiplier') {
+                value = Math.max(0.5, Math.min(2.0, value)); // 限制在 [0.5, 2.0]
+            } else if (paramName === 'orbitEccentricity') {
+                value = Math.max(0, Math.min(0.7, value)); // 限制在 [0, 0.7]
+            }
+
+            // 视觉参数验证
+            else if (paramName === 'backgroundStars') {
+                value = Math.max(100, Math.min(5000, value)); // 限制在 [100, 5000]
+            } else if (paramName === 'nebulaCount') {
+                value = Math.max(0, Math.min(10, value)); // 限制在 [0, 10]
+            } else if (paramName === 'lightIntensity') {
+                value = Math.max(50, Math.min(255, value)); // 限制在 [50, 255]
+            } else if (paramName === 'ambientLight') {
+                value = Math.max(10, Math.min(100, value)); // 限制在 [10, 100]
+            }
+
+            // 相机参数验证
+            else if (paramName === 'cameraDistance') {
+                value = Math.max(200, Math.min(2000, value)); // 限制在 [200, 2000]
+            } else if (paramName === 'autoRotateSpeed') {
+                value = Math.max(0, Math.min(0.01, value)); // 限制在 [0, 0.01]
+            }
+
+            // 如果值被修正，显示警告
+            if (value !== oldValue && oldValue !== undefined && paramName !== 'autoRotateSpeed') {
+                console.log(`ℹ️ 参数 ${paramName}: ${oldValue} → ${value}`);
+            }
+
+            // 更新参数
+            params[paramName] = value;
+
+            // 更新显示
+            let valueEl = document.getElementById(paramName + '-value');
+            if (valueEl) {
+                valueEl.textContent = value;
+            }
+
+            // checkbox 参数特殊处理
+            if (paramName === 'showOrbits' || paramName === 'autoRotate' || paramName === 'enableCollisions') {
+                // 布尔值已在 onchange 中处理
+                return;
+            }
+
+            // 某些参数需要重新初始化
+            if (['starCount', 'planetCount', 'moonCountRange', 'sunSize', 'backgroundStars', 'nebulaCount'].includes(paramName)) {
+                initializeSystem();
+            }
+        }
+
+        // 更新 UI 显示以反映参数修正
+        function updateUIDisplay() {
+            // 同步所有参数控件到当前 params 值
+            for (let key in params) {
+                let el = document.getElementById(key);
+                if (el) {
+                    let value = params[key];
+                    if (el.type === 'checkbox') {
+                        el.checked = value;
+                    } else {
+                        el.value = value;
+                    }
+
+                    let valueEl = document.getElementById(key + '-value');
+                    if (valueEl && typeof params[key] !== 'boolean') {
+                        valueEl.textContent = value;
+                    }
+                }
+            }
+        }
+
+        function updateSeedDisplay() {
+            document.getElementById('seed-input').value = params.seed;
+        }
+
+        function updateSeed() {
+            let input = document.getElementById('seed-input');
+            let newSeed = parseInt(input.value);
+            if (newSeed && newSeed > 0) {
+                params.seed = newSeed;
+                initializeSystem();
+            } else {
+                updateSeedDisplay();
+            }
+        }
+
+        function previousSeed() {
+            params.seed = Math.max(1, params.seed - 1);
+            updateSeedDisplay();
+            initializeSystem();
+        }
+
+        function nextSeed() {
+            params.seed = params.seed + 1;
+            updateSeedDisplay();
+            initializeSystem();
+        }
+
+        function randomSeedAndUpdate() {
+            params.seed = Math.floor(Math.random() * 999999) + 1;
+            updateSeedDisplay();
+            initializeSystem();
+        }
+
+        function resetParameters() {
+            params = {...defaultParams};
+
+            // 更新所有 UI 元素
+            for (let key in params) {
+                let el = document.getElementById(key);
+                if (el) {
+                    if (el.type === 'checkbox') {
+                        el.checked = params[key];
+                    } else {
+                        el.value = params[key];
+                    }
+
+                    let valueEl = document.getElementById(key + '-value');
+                    if (valueEl && typeof params[key] !== 'boolean') {
+                        valueEl.textContent = params[key];
+                    }
+                }
+            }
+
+            updateSeedDisplay();
+            initializeSystem();
+        }
+
+        function resetCamera() {
+            params.cameraDistance = 600;
+            params.autoRotate = true;
+            params.autoRotateSpeed = 0.002;
+            document.getElementById('cameraDistance').value = 600;
+            document.getElementById('cameraDistance-value').textContent = 600;
+            document.getElementById('autoRotate').checked = true;
+            document.getElementById('autoRotateSpeed').value = 0.002;
+            document.getElementById('autoRotateSpeed-value').textContent = 0.002;
+        }
+
+        function toggleAnimation() {
+            isAnimating = !isAnimating;
+        }
+
+        function downloadScreenshot() {
+            saveCanvas('3D星际模拟-种子' + params.seed, 'png');
+        }
+
+        // 初始化
+        window.addEventListener('load', function() {
+            updateSeedDisplay();
+        });
+    </script>
+</body>
+</html>
