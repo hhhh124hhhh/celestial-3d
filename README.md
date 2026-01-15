@@ -17,7 +17,7 @@
 
 ### 方法 1: 直接打开查看器（最简单）
 
-1. 找到文件：`D:\skills\skills\celestial-3d\templates\viewer_3d.html`
+1. 找到文件：`templates/viewer_3d.html`（在克隆的仓库目录中）
 2. 双击用浏览器打开，或右键选择"打开方式"→ 选择浏览器
 3. 立即看到 3D 星际模拟！
 
@@ -254,7 +254,7 @@ A: 点击"重置参数"按钮。
 - **技能名称**: celestial-3d
 - **版本**: 1.0
 - **创建日期**: 2026-01-15
-- **作者**: Claude Code
+- **作者**: hhhh124hhhh
 - **许可证**: Apache 2.0
 
 ---
